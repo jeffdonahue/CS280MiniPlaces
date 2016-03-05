@@ -45,6 +45,8 @@ parser.add_argument('--cudnn', action='store_true',
     help='Use CuDNN at training time -- usually faster, but non-deterministic')
 parser.add_argument('--gpu', type=int, default=0,
     help='GPU ID to use for training and inference (-1 for CPU)')
+parser.add_argument('--use_snapshot_file', default=None,
+    help='If set, it will use this file for initial weights.')
 args = parser.parse_args()
 
 # disable most Caffe logging (unless env var $GLOG_minloglevel is already set)
@@ -246,6 +248,7 @@ def miniplaces_solver(train_net_path, test_net_path=None):
     # --snapshot_dir and --snapshot_prefix args.
     s.snapshot = args.stepsize // 2
     s.snapshot_prefix = snapshot_prefix()
+    
 
     # Create snapshot dir if it doesn't already exist.
     if not os.path.exists(args.snapshot_dir):
@@ -265,6 +268,9 @@ def train_net(with_val_net=False):
         val_net_file = None
     solver_file = miniplaces_solver(train_net_file, val_net_file)
     solver = caffe.get_solver(solver_file)
+    if args.use_snapshot_file != None:
+        if os.path.exists(args.use_snapshot_file):
+            solver.net.copy_from(args.use_snapshot_file)
     outputs = sorted(solver.net.outputs)
     def str_output(output):
         value = solver.net.blobs[output].data
